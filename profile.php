@@ -26,7 +26,7 @@ if (!$cin) {
 }
 
 // Récupérer les informations de l'utilisateur
-$stmt = $conn->prepare("SELECT nom FROM joueur WHERE cin = ?");
+$stmt = $conn->prepare("SELECT nom, prenom, email, telephone, cin, sexe, date_of_birth FROM joueur WHERE cin = ?");
 if (!$stmt) {
     http_response_code(500);
     echo json_encode(["message" => "Erreur lors de la préparation de la requête SQL."]);
@@ -43,15 +43,19 @@ if ($stmt->num_rows === 0) {
     exit();
 }
 
-$stmt->bind_result($nom);
+$stmt->bind_result($nom, $prenom, $email, $telephone, $cin, $sexe, $date_of_birth);
 $stmt->fetch();
 
 // Renvoyer les informations de l'utilisateur
 http_response_code(200);
 echo json_encode([
     "nom" => $nom,
-   
-  
+    "prenom" => $prenom,
+    "email" => $email,
+    "telephone" => $telephone,
+    "cin" => $cin,
+    "sex" => $sexe,
+    "dateNaissance" => $date_of_birth
 ]);
 
 $stmt->close();
