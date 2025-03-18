@@ -16,24 +16,24 @@ if ($conn->connect_error) {
     exit();
 }
 
-// Récupérer l'ID de l'utilisateur depuis la requête
-$user_id = $_GET['user_id'] ?? null;
+// Récupérer le CIN de l'utilisateur depuis la requête
+$cin = $_GET['cin'] ?? null;
 
-if (!$user_id) {
+if (!$cin) {
     http_response_code(401);
-    echo json_encode(["message" => "ID de l'utilisateur manquant."]);
+    echo json_encode(["message" => "CIN de l'utilisateur manquant."]);
     exit();
 }
 
 // Récupérer les informations de l'utilisateur
-$stmt = $conn->prepare("SELECT nom, prenom, sexe, telephone, email, cin, date_of_birth, profile_image FROM joueur WHERE id = ?");
+$stmt = $conn->prepare("SELECT nom FROM joueur WHERE cin = ?");
 if (!$stmt) {
     http_response_code(500);
     echo json_encode(["message" => "Erreur lors de la préparation de la requête SQL."]);
     exit();
 }
 
-$stmt->bind_param("i", $user_id);
+$stmt->bind_param("s", $cin); // 's' pour string
 $stmt->execute();
 $stmt->store_result();
 
@@ -43,21 +43,15 @@ if ($stmt->num_rows === 0) {
     exit();
 }
 
-// Bind the result variables
-$stmt->bind_result($nom, $prenom, $sexe, $telephone, $email, $cin, $date_of_birth, $profile_image);
+$stmt->bind_result($nom);
 $stmt->fetch();
 
 // Renvoyer les informations de l'utilisateur
 http_response_code(200);
 echo json_encode([
     "nom" => $nom,
-    "prenom" => $prenom,
-    "sex" => $sexe,
-    "telephone" => $telephone,
-    "email" => $email,
-    "cin" => $cin,
-    "dateNaissance" => $date_of_birth,
-    "profileImage" => $profile_image,
+   
+  
 ]);
 
 $stmt->close();

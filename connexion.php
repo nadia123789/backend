@@ -30,7 +30,7 @@ $email = $data['email'];
 $password = $data['password'];
 
 // Vérification des informations d'identification
-$stmt = $conn->prepare("SELECT id, password FROM joueur WHERE email = ?");
+$stmt = $conn->prepare("SELECT cin, password FROM joueur WHERE email = ?");
 if (!$stmt) {
     http_response_code(500);
     echo json_encode(["message" => "Erreur lors de la préparation de la requête SQL."]);
@@ -47,7 +47,7 @@ if ($stmt->num_rows === 0) {
     exit();
 }
 
-$stmt->bind_result($id, $hashed_password);
+$stmt->bind_result($cin, $hashed_password);
 $stmt->fetch();
 
 // Vérification du mot de passe
@@ -57,11 +57,15 @@ if (!password_verify($password, $hashed_password)) {
     exit();
 }
 
+// Génération d'un token (exemple simple)
+$token = bin2hex(random_bytes(16)); // Génère un token aléatoire
+
 // Connexion réussie
 http_response_code(200);
 echo json_encode([
     "message" => "Connexion réussie.",
-    "user_id" => $id, // Renvoyer l'ID de l'utilisateur
+    "token" => $token, // Renvoyer le token
+    "cin" => $cin, // Renvoyer le CIN de l'utilisateur
 ]);
 
 $stmt->close();
