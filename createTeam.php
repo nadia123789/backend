@@ -49,6 +49,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'captainId' => $captainId
             ]);
 
+            // Mettre à jour la colonne 'capitain' du joueur qui a créé l'équipe
+            $updateStmt = $pdo->prepare("UPDATE joueur SET capitain = 1 WHERE cin = :captainId");
+            $updateStmt->execute(['captainId' => $captainId]);
+
             echo json_encode(['success' => true, 'message' => 'Team created successfully.']);
         } else {
             echo json_encode(['success' => false, 'message' => 'File upload failed.']);
