@@ -57,7 +57,7 @@ echo json_encode([
     "email" => $email,
     "cin" => $cin,
     "dateNaissance" => $date_of_birth,
-    "profileImage" => $profile_image ? "http://localhost/backend-matchit/uploads/" . $profile_image : null,
+    "profileImage" => $profile_image ? "http://localhost/backend-matchit/" . $profile_image : null,
 ]);
 
 $stmt->close();
