@@ -41,7 +41,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         // Move the uploaded file to the uploads directory
         if (move_uploaded_file($fileTmpName, $filePath)) {
-            // Prepare the SQL insert statement
+            // Prepare the SQL insert statement to create a new team
             $stmt = $pdo->prepare("INSERT INTO equipe (nom_equipe, logo, capitaine_id) VALUES (:teamName, :logo, :captainId)");
             $stmt->execute([
                 'teamName' => $teamName,
@@ -49,10 +49,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'captainId' => $captainId
             ]);
 
-            // Mettre à jour la colonne 'capitain' du joueur qui a créé l'équipe
-            $updateStmt = $pdo->prepare("UPDATE joueur SET capitain = 1, equipe = :teamName WHERE cin = :captainId");
+            // Get the ID of the newly inserted team (auto-incremented id_equipe)
+            $teamId = $pdo->lastInsertId();
+
+            // Update the 'id_equipe' column in the 'joueur' table for the captain
+            $updateStmt = $pdo->prepare("UPDATE joueur SET capitain = 1, id_equipe = :teamId WHERE cin = :captainId");
             $updateStmt->execute([
-                'teamName' => $teamName,
+                'teamId' => $teamId,
                 'captainId' => $captainId
             ]);
 
