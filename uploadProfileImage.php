@@ -1,64 +1,62 @@
 <?php
-header("Access-Control-Allow-Origin: *");
 header("Content-Type: application/json; charset=UTF-8");
 
-// Connexion à la base de données
+// Database connection
 $servername = "localhost";
-$username = "root"; // Remplacez par votre nom d'utilisateur MySQL
-$password = ""; // Remplacez par votre mot de passe MySQL
-$dbname = "matchit"; // Remplacez par le nom de votre base de données
+$username = "root"; // Replace with your MySQL username
+$password = ""; // Replace with your MySQL password
+$dbname = "matchit"; // Replace with your database name
 
 $conn = new mysqli($servername, $username, $password, $dbname);
 
-// Vérification de la connexion
+// Check connection
 if ($conn->connect_error) {
     http_response_code(500);
-    echo json_encode(["message" => "Échec de la connexion à la base de données."]);
+    echo json_encode(["message" => "Failed to connect to the database."]);
     exit();
 }
 
-// Vérifier si un fichier a été envoyé
-if (!isset($_FILES['profileImage']) || !isset($_POST['cin'])) {
+// Get the user's CIN and profile image from the request
+$cin = $_POST['cin'] ?? null;
+$profileImage = $_FILES['profileImage'] ?? null;
+
+if (!$cin || !$profileImage) {
     http_response_code(400);
-    echo json_encode(["message" => "Fichier ou CIN manquant."]);
+    echo json_encode(["message" => "Missing data."]);
     exit();
 }
 
-$cin = $_POST['cin'];
-$uploadDir = __DIR__ . '/../../uploads/profiles/'; // Chemin relatif vers le dossier uploads/profiles
-$fileName = uniqid() . '_' . basename($_FILES['profileImage']['name']); // Nom unique du fichier
-$uploadFile = $uploadDir . $fileName;
+// Move the uploaded file to the uploads folder
+$uploadDir = "uploads/";
+$uploadFile = $uploadDir . basename($profileImage['name']);
 
-// Vérifier si le dossier existe, sinon le créer
-if (!is_dir($uploadDir)) {
-    mkdir($uploadDir, 0777, true);
-}
-
-// Déplacer le fichier uploadé vers le dossier de destination
-if (move_uploaded_file($_FILES['profileImage']['tmp_name'], $uploadFile)) {
-    // Mettre à jour la base de données avec le nom du fichier
+if (move_uploaded_file($profileImage['tmp_name'], $uploadFile)) {
+    // Update the image path in the database
     $stmt = $conn->prepare("UPDATE joueur SET profile_image = ? WHERE cin = ?");
     if (!$stmt) {
         http_response_code(500);
-        echo json_encode(["message" => "Erreur lors de la préparation de la requête SQL."]);
+        echo json_encode(["message" => "Error preparing SQL query."]);
         exit();
     }
 
-    $stmt->bind_param("ss", $fileName, $cin); // 's' pour string
+    $stmt->bind_param("ss", $uploadFile, $cin);
     $stmt->execute();
 
     if ($stmt->affected_rows > 0) {
         http_response_code(200);
-        echo json_encode(["message" => "Image de profil mise à jour avec succès.", "imagePath" => $fileName]);
+        echo json_encode([
+            "message" => "Profile image updated successfully!",
+            "imagePath" => basename($profileImage['name'])
+        ]);
     } else {
         http_response_code(500);
-        echo json_encode(["message" => "Erreur lors de la mise à jour de l'image de profil dans la base de données."]);
+        echo json_encode(["message" => "Error updating profile image."]);
     }
 
     $stmt->close();
 } else {
     http_response_code(500);
-    echo json_encode(["message" => "Erreur lors du téléchargement de l'image."]);
+    echo json_encode(["message" => "Error moving uploaded file."]);
 }
 
 $conn->close();
