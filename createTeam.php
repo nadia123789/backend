@@ -50,7 +50,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             ]);
 
             // Mettre à jour la colonne 'capitain' du joueur qui a créé l'équipe
-            $updateStmt = $pdo->prepare("UPDATE joueur SET capitain = 1 WHERE cin = :captainId");
+            $updateStmt = $pdo->prepare("UPDATE joueur SET capitain = 1, equipe = :teamName WHERE cin = :captainId");
             $updateStmt->execute(['captainId' => $captainId]);
 
             echo json_encode(['success' => true, 'message' => 'Team created successfully.']);
