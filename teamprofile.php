@@ -17,7 +17,7 @@ if ($conn->connect_error) {
 }
 
 // Get and sanitize the user's CIN from the request
-$cin = filter_input(INPUT_GET, 'cin', FILTER_SANITIZE_STRING);
+$cin = filter_input(INPUT_GET, 'cin', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 
 if (!$cin) {
     http_response_code(400);
