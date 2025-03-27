@@ -1,73 +1,90 @@
 <?php
 header("Content-Type: application/json; charset=UTF-8");
 
-// Connexion à la base de données
+// Database connection details
 $servername = "localhost";
-$username = "root"; // Remplacez par votre nom d'utilisateur MySQL
-$password = ""; // Remplacez par votre mot de passe MySQL
-$dbname = "matchit"; // Remplacez par le nom de votre base de données
+$username = "root";
+$password = ""; // Update if necessary
+$dbname = "matchit";
 
+// Create connection
 $conn = new mysqli($servername, $username, $password, $dbname);
 
-// Vérification de la connexion
+// Check connection
 if ($conn->connect_error) {
     http_response_code(500);
-    echo json_encode(["message" => "Échec de la connexion à la base de données."]);
+    echo json_encode(["message" => "Database connection failed"]);
     exit();
 }
 
-// Récupération des données du formulaire
+// Get the data from the request
 $data = json_decode(file_get_contents("php://input"), true);
 
-// Vérification des données reçues
+// Validate input data
 if (empty($data['email']) || empty($data['password'])) {
     http_response_code(400);
-    echo json_encode(["message" => "Veuillez remplir tous les champs."]);
+    echo json_encode(["message" => "Please provide both email and password"]);
     exit();
 }
 
 $email = $data['email'];
-$password = $data['password'];
+$password_input = $data['password']; // The input password provided by the user
 
-// Vérification des informations d'identification
-$stmt = $conn->prepare("SELECT cin, password FROM joueur WHERE email = ?");
-if (!$stmt) {
-    http_response_code(500);
-    echo json_encode(["message" => "Erreur lors de la préparation de la requête SQL."]);
-    exit();
-}
-
+// Check if the user exists in the 'gestionnaire' table
+$stmt = $conn->prepare("SELECT idGestionnaire, password, nom, prenom FROM gestionnaire WHERE email = ?");
 $stmt->bind_param("s", $email);
 $stmt->execute();
 $stmt->store_result();
 
-if ($stmt->num_rows === 0) {
-    http_response_code(401);
-    echo json_encode(["message" => "Email ou mot de passe incorrect."]);
-    exit();
+if ($stmt->num_rows > 0) {
+    $stmt->bind_result($idGestionnaire, $stored_password, $nom, $prenom);
+    $stmt->fetch();
+
+    // Compare plain-text password for 'gestionnaire'
+    if ($password_input === $stored_password) {
+        $token = bin2hex(random_bytes(16)); // Generate a token
+        http_response_code(200);
+        echo json_encode([
+            "message" => "Login successful as Gestionnaire",
+            "token" => $token,
+            "idGestionnaire" => $idGestionnaire,
+            "role" => "gestionnaire",
+            "nom" => $nom,
+            "prenom" => $prenom
+        ]);
+        exit();
+    }
 }
 
-$stmt->bind_result($cin, $hashed_password);
-$stmt->fetch();
+// If not found in gestionnaire, check the 'joueur' table
+$stmtJoueur = $conn->prepare("SELECT cin, password FROM joueur WHERE email = ?");
+$stmtJoueur->bind_param("s", $email);
+$stmtJoueur->execute();
+$stmtJoueur->store_result();
 
-// Vérification du mot de passe
-if (!password_verify($password, $hashed_password)) {
-    http_response_code(401);
-    echo json_encode(["message" => "Email ou mot de passe incorrect."]);
-    exit();
+if ($stmtJoueur->num_rows > 0) {
+    $stmtJoueur->bind_result($cin, $stored_password_joueur);
+    $stmtJoueur->fetch();
+
+    // Use password_verify for 'joueur' as the password is hashed
+    if (password_verify($password_input, $stored_password_joueur)) {
+        $token = bin2hex(random_bytes(16)); // Generate a token
+        http_response_code(200);
+        echo json_encode([
+            "message" => "Login successful as Joueur",
+            "token" => $token,
+            "cin" => $cin,
+            "role" => "joueur"
+        ]);
+        exit();
+    }
 }
 
-// Génération d'un token (exemple simple)
-$token = bin2hex(random_bytes(16)); // Génère un token aléatoire
-
-// Connexion réussie
-http_response_code(200);
-echo json_encode([
-    "message" => "Connexion réussie.",
-    "token" => $token, // Renvoyer le token
-    "cin" => $cin, // Renvoyer le CIN de l'utilisateur
-]);
+// If no match is found in either table
+http_response_code(401);
+echo json_encode(["message" => "Invalid email or password"]);
 
 $stmt->close();
+$stmtJoueur->close();
 $conn->close();
 ?>
