@@ -53,13 +53,16 @@ if ($result->num_rows == 0) {
     exit;
 }
 
+// Generate a random 4-digit confirmation code
+$confirmation_code = str_pad(rand(0, 9999), 4, '0', STR_PAD_LEFT);
+
 // Insert into reservation table
-$sql = "INSERT INTO reservation (nom_equipe, nom_equipe_adversaire, nom_terrain, datetime) VALUES (?, ?, ?, ?)";
+$sql = "INSERT INTO reservation (nom_equipe, nom_equipe_adversaire, nom_terrain, datetime, confirmation_code) VALUES (?, ?, ?, ?, ?)";
 $stmt = $conn->prepare($sql);
-$stmt->bind_param("ssss", $nom_equipe, $nom_equipe_adversaire, $nom_terrain, $datetime);
+$stmt->bind_param("sssss", $nom_equipe, $nom_equipe_adversaire, $nom_terrain, $datetime, $confirmation_code);
 
 if ($stmt->execute()) {
-    echo json_encode(['success' => true, 'message' => 'Reservation successful!']);
+    echo json_encode(['success' => true, 'message' => 'Reservation successful!', 'confirmation_code' => $confirmation_code]);
 } else {
     echo json_encode(['success' => false, 'message' => 'Error: ' . $stmt->error]);
 }
