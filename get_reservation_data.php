@@ -32,11 +32,10 @@ if ($result->num_rows > 0) {
     $row = $result->fetch_assoc();
     $nom_equipe = $row['nom_equipe']; // Get the team name for this CIN
 
-    // Query to fetch all confirmed reservation data for this team or its opponent (nom_equipe or nom_equipe_adversaire)
+    // Query to fetch all reservation data for this team or its opponent
     $sql = "SELECT * FROM reservation 
             WHERE (nom_equipe = ? OR nom_equipe_adversaire = ?) 
-            AND is_confirmed = 1 
-            ORDER BY created_at DESC "; // Get confirmed reservations only
+            ORDER BY created_at DESC"; // Get all reservations, not just confirmed
     $stmt = $conn->prepare($sql);
     $stmt->bind_param("ss", $nom_equipe, $nom_equipe);
     $stmt->execute();
@@ -48,29 +47,31 @@ if ($result->num_rows > 0) {
         
         // Fetch all reservations and prepare both types of notifications
         while ($reservation = $result->fetch_assoc()) {
-            // First notification type: Confirmation Code
+            // Always return confirmation notification (confirmation code)
             $notifications[] = [
                 'type' => 'confirmation',
                 'message' => "Votre code de confirmation est : " . $reservation['confirmation_code'],
-                'date' => new DateTime($reservation['created_at']),
+                'date' => (new DateTime($reservation['created_at']))->format('c'), // Convert to ISO format
                 'time' => date("H:i", strtotime($reservation['created_at'])),
             ];
 
-            // Second notification type: Match details (nom_equipe, nom_equipe_adversaire, nom_terrain, datetime)
-            $notifications[] = [
-                'type' => 'match_details',
-                'message' => "Match: " . $reservation['nom_equipe'] . " vs " . $reservation['nom_equipe_adversaire'] . "\n" .
-                             "Lieu: " . $reservation['nom_terrain'] . "\n" .
-                             "Date et Heure: " . (new DateTime($reservation['datetime']))->format('Y-m-d H:i:s'),
-                'date' => new DateTime($reservation['created_at']),
-                'time' => date("H:i", strtotime($reservation['created_at'])),
-            ];
+            // Add match details notification if confirmed
+            if ($reservation['is_confirmed'] == 1) {
+                $notifications[] = [
+                    'type' => 'match_details',
+                    'message' => "Match: " . $reservation['nom_equipe'] . " vs " . $reservation['nom_equipe_adversaire'] . "\n" .
+                                 "Lieu: " . $reservation['nom_terrain'] . "\n" .
+                                 "Date et Heure: " . (new DateTime($reservation['datetime']))->format('Y-m-d H:i:s'),
+                    'date' => (new DateTime($reservation['created_at']))->format('c'), // Convert to ISO format
+                    'time' => date("H:i", strtotime($reservation['created_at'])),
+                ];
+            }
         }
 
         // Return all notifications as JSON
         echo json_encode($notifications);
     } else {
-        echo json_encode(['error' => 'No confirmed reservation found for this team']);
+        echo json_encode(['error' => 'No reservation found for this team']);
     }
 } else {
     echo json_encode(['error' => 'Team not found for this CIN']);
