@@ -18,7 +18,7 @@ if ($conn->connect_error) {
 $data = json_decode(file_get_contents("php://input"), true);
 
 // Vérifier que toutes les données sont présentes
-if (!isset($data["confirmation_code"], $data["note"], $data["commentaire"])) {
+if (!isset($data["confirmation_code"], $data["note"], $data["commentaire"], $data["score_equipes"])) {
     echo json_encode(["message" => "Données incomplètes."]);
     exit;
 }
@@ -26,6 +26,8 @@ if (!isset($data["confirmation_code"], $data["note"], $data["commentaire"])) {
 $confirmation_code = $conn->real_escape_string($data["confirmation_code"]);
 $note = (int)$data["note"];
 $commentaire = $conn->real_escape_string($data["commentaire"]);
+$score_equipe1 = (int)$data["score_equipes"]["equipe1"];
+$score_equipe2 = (int)$data["score_equipes"]["equipe2"];
 
 // Vérifier si le code de confirmation existe dans la base
 $checkQuery = "SELECT confirmation_code FROM reservation WHERE confirmation_code = '$confirmation_code'";
@@ -36,9 +38,9 @@ if ($result->num_rows == 0) {
     exit;
 }
 
-// Insérer l'évaluation
-$insertQuery = "INSERT INTO evaluation (confirmation_code, note, commentaire, date_evaluation) 
-                VALUES ('$confirmation_code', '$note', '$commentaire', NOW())";
+// Insérer l'évaluation avec les nouveaux champs
+$insertQuery = "INSERT INTO evaluations (confirmation_code, score_equipe1, score_equipe2, note, commentaire, date_evaluation) 
+                VALUES ('$confirmation_code', '$score_equipe1', '$score_equipe2', '$note', '$commentaire', NOW())";
 
 if ($conn->query($insertQuery)) {
     echo json_encode(["message" => "Évaluation enregistrée avec succès."]);

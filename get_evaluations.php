@@ -14,8 +14,8 @@ if ($conn->connect_error) {
     die(json_encode(["message" => "Échec de la connexion à la base de données."]));
 }
 
-// Récupérer toutes les évaluations avec les commentaires
-$query = "SELECT confirmation_code, note, commentaire, date_evaluation FROM evaluation ORDER BY date_evaluation DESC";
+// Récupérer toutes les évaluations avec les commentaires et les scores
+$query = "SELECT confirmation_code, score_equipe1, score_equipe2, note, commentaire, date_evaluation FROM evaluations ORDER BY date_evaluation DESC";
 $result = $conn->query($query);
 
 $evaluations = [];
