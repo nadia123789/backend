@@ -13,17 +13,17 @@ if ($conn->connect_error) {
     die(json_encode(["error" => "Échec de la connexion à la base de données."]));
 }
 
-$query = "SELECT * FROM evaluations";
+$query = "SELECT cin, nom, prenom, email, telephone, capitain FROM joueur";
 $result = $conn->query($query);
 
-$evaluations = [];
+$joueurs = [];
 if ($result->num_rows > 0) {
     while($row = $result->fetch_assoc()) {
-        $evaluations[] = $row;
+        $joueurs[] = $row;
     }
 }
 
-echo json_encode(["evaluations" => $evaluations]);
+echo json_encode(["joueurs" => $joueurs]);
 
 $conn->close();
 ?>
